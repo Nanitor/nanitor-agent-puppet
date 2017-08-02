@@ -1,0 +1,15 @@
+{
+  "name": "nanitor/nanitor_agent",
+  "version": "1.0.1",
+  "author": "Nanitor ehf",
+  "summary": "Installation of Nanitor agent and signup on a system",
+  "license": "Apache-2.0",
+  "source": "git@github.com:Nanitor/nanitor-agent-puppet.git",
+  "project_page": "git@github.com:Nanitor/nanitor-agent-puppet.git",
+  "issues_url": "sales@nanitor.com",
+  "dependencies": [
+    {"name":"puppetlabs-stdlib","version_requirement":">= 1.0.0"}
+  ],
+  "data_provider": null
+}
+
