@@ -1,12 +1,9 @@
-# The baseline for module testing used by Puppet Labs is that each manifest
-# should have a corresponding test manifest that declares that class or defined
-# type.
+# Example usage of the nanitor_agent Puppet module.
 #
-# Tests are then run by using puppet apply --noop (to check for compilation
-# errors and view a log of events) or by fully applying the test in a virtual
-# environment (to compare the resulting system state to the desired state).
+# This will install the Nanitor Agent and run the signup command if not already signed up.
 #
-# Learn more about module testing here:
-# https://docs.puppet.com/guides/tests_smoke.html
-#
-include ::nanitor_agent
+# Replace the signup_url with a real one provided by your Nanitor Hub.
+
+class { 'nanitor_agent':
+  signup_url => 'https://myinstance.nanitor.net/your-signup-token',
+}
