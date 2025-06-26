@@ -43,7 +43,6 @@ class nanitor_agent (
 
   case $facts['os']['family'] {
     'Debian': {
-
       package { ['gnupg', 'wget']:
         ensure => installed,
       }
@@ -75,22 +74,23 @@ class nanitor_agent (
     }
 
     'RedHat': {
-
       exec { 'Import Nanitor RPM GPG key':
         command => 'rpm --import https://yum.nanitor.com/nanitor-agent/RPM-GPG-KEY-nanitor',
         unless  => 'rpm -q gpg-pubkey | grep -qi nanitor',
         path    => ['/usr/bin', '/bin'],
       }
 
-      file { '/etc/yum.repos.d/nanitor-agent.repo':
+     file { '/etc/yum.repos.d/nanitor-agent.repo':
         ensure  => file,
-        content => "[nanitor-agent]
-name=Nanitor Agent Repository
-baseurl=https://yum.nanitor.com/nanitor-agent/rhel-7-x86_64
-enabled=1
-gpgcheck=1
-gpgkey=https://yum.nanitor.com/nanitor-agent/RPM-GPG-KEY-nanitor
-",
+        content => @("EOF")
+          [nanitor-agent]
+          name=Nanitor Agent Repository
+          baseurl=https://yum.nanitor.com/nanitor-agent/rhel-7-x86_64
+          enabled=1
+          gpgcheck=1
+          gpgkey=https://yum.nanitor.com/nanitor-agent/RPM-GPG-KEY-nanitor
+          | EOF
+        ,
         owner   => 'root',
         group   => 'root',
         mode    => '0644',
