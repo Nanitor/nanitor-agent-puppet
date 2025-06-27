@@ -37,7 +37,7 @@ class nanitor_agent (
 ) {
   case $facts['os']['family'] {
     'Debian': {
-      include apt
+      include ::apt
 
       # configure the repo holding the Nanitor Agent on Debian flavours
       apt::source { 'nanitor-agent':
@@ -45,13 +45,14 @@ class nanitor_agent (
         location => 'https://deb.nanitor.com/nanitor-agent',
         release  => 'bookworm',
         repos    => 'main',
+        key      => {
+          'name'   => 'nanitor.gpg',
+           source => 'https://deb.nanitor.com/DEB-GPG-KEY-nanitor.gpg',
+        },
+        notify_update  => true,
       }
-       
-      apt::key { 'nanitor-apt-key':
-         ensure => present,
-         id     => 'BE6BD0E0ECAFE322114FD8072FCC7D96675324EA',
-         source => 'https://deb.nanitor.com/DEB-GPG-KEY-nanitor',
-      }
+
+      Apt::Source['nanitor-agent'] -> Package['nanitor-agent']
     }
 
     'RedHat': {
