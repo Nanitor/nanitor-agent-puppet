@@ -1,3 +1,22 @@
+# Dockerfile.dev
+# ===========================
+#
+# Development container for Nanitor Puppet module
+#
+# This image is used to test and develop the Nanitor Agent Puppet module
+# in a clean, reproducible Debian environment with Puppet 7 and required modules pre-installed.
+#
+# It uses Debian Bullseye, sets up locales correctly for UTF-8, and installs
+# puppet-agent and puppetlabs-apt for testing module functionality locally.
+#
+# Authors
+# -------
+# Nanitor Operations Team <operations@nanitor.com>
+#
+# Copyright
+# ---------
+# Copyright © 2017–2025 Nanitor ehf. — All rights reserved.
+
 FROM debian:bullseye
 
 ENV PATH="/opt/puppetlabs/bin:$PATH"
