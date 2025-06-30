@@ -86,6 +86,6 @@ class nanitor_agent (
   service { 'nanitor-agent':
     ensure  => running,
     enable  => true,
-    require => Package['nanitor-agent'],
+    require => [Package['nanitor-agent'], Exec['nanitor-agent-signup']],
   }
 }
