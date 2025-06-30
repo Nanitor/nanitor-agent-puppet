@@ -1,83 +1,91 @@
 # Class: nanitor_agent
 # ===========================
 #
-# Full description of class nanitor_agent here.
+# Installs and configures the Nanitor Agent on supported Linux systems using
+# Nanitor's official repositories and a provided signup URL.
+#
+# This module supports both Debian-based and RHEL-based systems. It is tested
+# on Debian 12 and RHEL 7+, but should also work on other systemd-based Linux
+# distributions due to the statically compiled nature of the agent binary.
 #
 # Parameters
 # ----------
 #
-# Document parameters here.
+# * `signup_url` (String)
+#   The full signup URL from the Nanitor Portal. Used to register the agent
+#   on first install.
 #
-# * `sample parameter`
-# Explanation of what this parameter affects and what it defaults to.
-# e.g. "Specify one or more upstream ntp servers as an array."
+# Example
+# -------
 #
-# Variables
-# ----------
-#
-# Here you should define a list of variables that this module would require.
-#
-# * `sample variable`
-#  Explanation of how this variable affects the function of this class and if
-#  it has a default. e.g. "The parameter enc_ntp_servers must be set by the
-#  External Node Classifier as a comma separated list of hostnames." (Note,
-#  global variables should be avoided in favor of class parameters as
-#  of Puppet 2.6.)
-#
-# Examples
-# --------
-#
-# @example
-#    class { 'nanitor_agent':
-#      servers => [ 'pool.ntp.org', 'ntp.local.company.com' ],
-#    }
+#   class { 'nanitor_agent':
+#     signup_url => 'https://myinstance.nanitor.net/abc123',
+#   }
 #
 # Authors
 # -------
+# Nanitor Operations Team <operations@nanitor.com>
 #
-# Author Name sales@nanitor.com
+# Based on original work by Sverrir Arason <sverrir@sverrir.org>
 #
 # Copyright
 # ---------
-#
-# Copyright 2017 Nanitor ehf
+# Copyright © 2017–2025 Nanitor ehf. — All rights reserved.
 #
 class nanitor_agent (
-  $signup_command   = $nanitor_agent::params::signup_command,
-  $issignup_command = $nanitor_agent::params::issignup_command,
-  $signup_file      = $nanitor_agent::params::signup_file,
-  $provider         = $nanitor_agent::params::provider,
-)  inherits nanitor_agent::params 
-{
+  String $signup_url,
+) {
+  case $facts['os']['family'] {
+    'Debian': {
+      include ::apt
 
-  # install the Nanitor Agent rpm package
+      # configure the repo holding the Nanitor Agent on Debian flavours
+      apt::source { 'nanitor-agent':
+        comment  => 'Nanitor agent stable',
+        location => 'https://deb.nanitor.com/nanitor-agent',
+        release  => 'bookworm',
+        repos    => 'main',
+        key      => {
+          'name'   => 'nanitor.gpg',
+           source => 'https://deb.nanitor.com/DEB-GPG-KEY-nanitor.gpg',
+        },
+        notify_update  => true,
+      }
+
+      Apt::Source['nanitor-agent'] -> Package['nanitor-agent']
+    }
+
+    'RedHat': {
+      yumrepo { 'nanitor-agent-repo':
+        enabled  => 1,
+        descr    => 'Nanitor Agent Stable Repo',
+        baseurl  => 'https://yum.nanitor.com/nanitor-agent/rhel-7-x86_64',
+        gpgkey   => 'https://yum.nanitor.com/nanitor-agent/RPM-GPG-KEY-nanitor',
+        gpgcheck => 1,
+      }
+    }
+
+    default: {
+      fail("Unsupported OS family: ${facts['os']['family']}")
+    }
+  }
+
   package { 'nanitor-agent':
-    ensure => installed,
-    notify => Exec['nanitor-agent-signup'],
-    provider => $provider,
+    ensure => latest,
   }
 
-  file { "/root/${signup_file}":
-     source => "puppet:///modules/nanitor_agent/$signup_file",
-     owner => 'root',
-     group => 'root',
-     mode => '0644',
-     require => Package['nanitor-agent'],
+  exec { 'nanitor-agent-signup':
+    environment => ['PATH=/opt/nanitor-agent/bin:/usr/bin:/bin', 'LANG=en_US.UTF-8', 'LC_ALL=en_US.UTF-8'],
+    logoutput   => true,
+    command     => "/opt/nanitor-agent/bin/nanitor-agent signup --keyfile ${signup_url} 2>&1",
+    unless      => '/opt/nanitor-agent/bin/nanitor-agent is-signedup',
+    notify      => Service['nanitor-agent'],
+    require     => Package['nanitor-agent'],
   }
 
-  # Run the Nanitor Agent signup
-  exec {'nanitor-agent-signup':
-     command => $signup_command,
-     unless  => $issignup_command,
-     path  => ['/usr/lib/nanitor-agent/bin', '/usr/local/bin', '/usr/sbin', '/usr/bin'],
-     notify => Service['nanitor-agent'],
-     require => File["/root/$signup_file"],
-  }
-
-  # Enable start on boot and ensure that the service is running
-  service {'nanitor-agent':
-     enable => 'true',
-     ensure => 'running',
-     require => Package["nanitor-agent"],
+  service { 'nanitor-agent':
+    ensure  => running,
+    enable  => true,
+    require => [Package['nanitor-agent'], Exec['nanitor-agent-signup']],
   }
 }
